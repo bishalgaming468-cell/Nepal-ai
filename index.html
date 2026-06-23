@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Nepal AI — Voice Assistant by Bishal Chaudhary</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.0/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/space-grotesk@5.0.0/index.css">
+<style>
+  :root{--bg:#05060a;--accent:#8b5cf6;--accent2:#06b6d4;--accent3:#ec4899;}
+  *{font-family:'Inter',sans-serif;}
+  body{background:var(--bg);color:#fff;overflow-x:hidden;min-height:100vh;}
+  .font-display{font-family:'Space Grotesk',sans-serif;letter-spacing:-0.02em;}
+  .bg-grid{background-image:radial-gradient(circle at 20% 20%, rgba(139,92,246,0.15), transparent 40%),radial-gradient(circle at 80% 80%, rgba(6,182,212,0.12), transparent 40%),radial-gradient(circle at 50% 50%, rgba(236,72,153,0.08), transparent 50%);}
+  .glass{background:rgba(255,255,255,0.03);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.08);}
+  .glow-border{box-shadow:0 0 40px rgba(139,92,246,0.25),inset 0 0 20px rgba(139,92,246,0.05);}
+  .orb-container{position:relative;width:320px;height:320px;display:flex;align-items:center;justify-content:center;}
+  .orb{width:180px;height:180px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#c4b5fd,#8b5cf6 40%,#4c1d95 80%);box-shadow:0 0 60px rgba(139,92,246,0.6),0 0 120px rgba(6,182,212,0.3),inset 0 0 40px rgba(255,255,255,0.2);animation:orbPulse 4s ease-in-out infinite;position:relative;z-index:3;}
+  .orb::before{content:'';position:absolute;inset:-4px;border-radius:50%;background:conic-gradient(from 0deg,#8b5cf6,#06b6d4,#ec4899,#8b5cf6);filter:blur(14px);opacity:0.5;animation:rotate 8s linear infinite;z-index:-1;}
+  .orb.listening{animation:orbPulse 1.2s ease-in-out infinite,orbShake 0.3s ease-in-out infinite;background:radial-gradient(circle at 30% 30%,#fbcfe8,#ec4899 40%,#9d174d 80%);box-shadow:0 0 80px rgba(236,72,153,0.7),0 0 160px rgba(139,92,246,0.4),inset 0 0 40px rgba(255,255,255,0.3);}
+  .orb.speaking{animation:orbSpeak 0.6s ease-in-out infinite;background:radial-gradient(circle at 30% 30%,#a5f3fc,#06b6d4 40%,#155e75 80%);box-shadow:0 0 80px rgba(6,182,212,0.7),0 0 160px rgba(139,92,246,0.4),inset 0 0 40px rgba(255,255,255,0.3);}
+  @keyframes orbPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
+  @keyframes orbSpeak{0%,100%{transform:scale(1);}50%{transform:scale(1.12);}}
+  @keyframes orbShake{0%,100%{transform:translate(0,0) scale(1.05);}25%{transform:translate(-2px,1px) scale(1.08);}75%{transform:translate(2px,-1px) scale(1.08);}}
+  @keyframes rotate{to{transform:rotate(360deg);}}
+  .ring{position:absolute;border-radius:50%;border:1px solid rgba(139,92,246,0.3);animation:ringPulse 3s ease-out infinite;}
+  .ring.r1{width:220px;height:220px;animation-delay:0s;}
+  .ring.r2{width:260px;height:260px;animation-delay:0.6s;}
+  .ring.r3{width:300px;height:300px;animation-delay:1.2s;}
+  .ring.active{border-color:rgba(236,72,153,0.5);animation-duration:1.5s;}
+  @keyframes ringPulse{0%{transform:scale(0.8);opacity:0.8;}100%{transform:scale(1.4);opacity:0;}}
+  #waveCanvas{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;}
+  .btn-primary{background:linear-gradient(135deg,#8b5cf6,#06b6d4);transition:all 0.3s;box-shadow:0 4px 20px rgba(139,92,246,0.4);}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(139,92,246,0.6);}
+  .btn-ghost{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);transition:all 0.3s;}
+  .btn-ghost:hover{background:rgba(255,255,255,0.1);border-color:rgba(139,92,246,0.5);}
+  .chat-bubble{animation:slideUp 0.4s ease-out;}
+  @keyframes slideUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+  .gradient-text{background:linear-gradient(135deg,#c4b5fd 0%,#67e8f9 50%,#f9a8d4 100%);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .scrollbar::-webkit-scrollbar{width:6px;}
+  .scrollbar::-webkit-scrollbar-track{background:transparent;}
+  .scrollbar::-webkit-scrollbar-thumb{background:rgba(139,92,246,0.3);border-radius:3px;}
+  .modal-overlay{background:rgba(0,0,0,0.7);backdrop-filter:blur(10px);}
+  .status-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 10px #22c55e;animation:blink 2s infinite;}
+  @keyframes blink{0%,100%{opacity:1;}50%{opacity:0.4;}}
+  .typing-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#8b5cf6;margin:0 2px;animation:typing 1.4s infinite;}
+  .typing-dot:nth-child(2){animation-delay:0.2s;}
+  .typing-dot:nth-child(3){animation-delay:0.4s;}
+  @keyframes typing{0%,60%,100%{transform:translateY(0);opacity:0.4;}30%{transform:translateY(-6px);opacity:1;}}
+</style>
+</head>
+<body class="bg-grid">
+<div class="min-h-screen flex flex-col">
+  <nav class="flex items-center justify-between px-6 py-4 border-b border-white/5 glass sticky top-0 z-50">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#8b5cf6,#06b6d4);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="white"/></svg>
+      </div>
+      <div>
+        <div class="font-display font-bold text-lg gradient-text">Nepal AI</div>
+        <div class="text-[10px] text-white/40 -mt-1">Voice Assistant • v2.0</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full glass text-xs">
+        <span class="status-dot"></span>
+        <span class="text-white/70">Backend Online</span>
+      </div>
+      <button onclick="openAbout()" class="btn-ghost px-4 py-2 rounded-full text-sm font-medium">About</button>
+    </div>
+  </nav>
+
+  <main class="flex-1 flex flex-col lg:flex-row gap-6 p-4 md:p-8 max-w-7xl mx-auto w-full">
+    <section class="flex-1 flex flex-col items-center justify-center gap-6">
+      <div class="text-center">
+        <div class="inline-block px-3 py-1 rounded-full glass text-xs text-white/60 mb-3">
+          <span class="gradient-text font-semibold">● LIVE</span> • Nepali Voice AI
+        </div>
+        <h1 class="font-display text-4xl md:text-5xl font-bold gradient-text mb-2">Namaste, Ma Timro AI Sahayak</h1>
+        <p class="text-white/50 text-sm md:text-base">Boli ra sodhnuhos — ma sunnechu ra jawab dinechu</p>
+      </div>
+
+      <div class="orb-container">
+        <canvas id="waveCanvas"></canvas>
+        <div class="ring r1"></div>
+        <div class="ring r2"></div>
+        <div class="ring r3"></div>
+        <div id="orb" class="orb"></div>
+      </div>
+
+      <div id="statusText" class="text-center">
+        <div class="text-sm text-white/60" id="statusLabel">Tap the mic to start</div>
+        <div class="text-xs text-white/30 mt-1" id="transcriptPreview"></div>
+      </div>
+
+      <div class="flex gap-3">
+        <button id="micBtn" onclick="toggleMic()" class="btn-primary px-8 py-4 rounded-full font-semibold flex items-center gap-2">
+          <svg id="micIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          <span id="micLabel">Start Talking</span>
+        </button>
+        <button onclick="stopSpeaking()" class="btn-ghost px-5 py-4 rounded-full" title="Stop">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+        </button>
+      </div>
+
+      <div class="flex flex-wrap gap-2 justify-center max-w-xl">
+        <button onclick="quickAsk('Timro naam ke ho?')" class="btn-ghost px-3 py-1.5 rounded-full text-xs">Timro naam ke ho?</button>
+        <button onclick="quickAsk('Kaslai develop gareko ho timilai?')" class="btn-ghost px-3 py-1.5 rounded-full text-xs">Kasle banayo?</button>
+        <button onclick="quickAsk('Nepal ko rajdhani kun ho?')" class="btn-ghost px-3 py-1.5 rounded-full text-xs">Nepal ko rajdhani</button>
+        <button onclick="quickAsk('Malaai euta katha sunau')" class="btn-ghost px-3 py-1.5 rounded-full text-xs">Katha sunau</button>
+      </div>
+    </section>
+
+    <aside class="lg:w-[420px] flex flex-col glass rounded-2xl overflow-hidden glow-border">
+      <div class="px-5 py-4 border-b border-white/5 flex items-center justify-between">
+        <div>
+          <div class="font-display font-semibold">Conversation</div>
+          <div class="text-xs text-white/40" id="chatCount">0 messages</div>
+        </div>
+        <button onclick="clearChat()" class="btn-ghost px-3 py-1 rounded-full text-xs">Clear</button>
+      </div>
+      <div id="chatBox" class="flex-1 overflow-y-auto scrollbar p-4 space-y-3 max-h-[500px] min-h-[300px]">
+        <div class="flex gap-3 chat-bubble">
+          <div class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center" style="background:linear-gradient(135deg,#8b5cf6,#06b6d4);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z"/></svg>
+          </div>
+          <div class="glass rounded-2xl rounded-tl-sm px-4 py-3 max-w-[85%]">
+            <div class="text-sm">Namaste! 🙏 Ma timro AI sahayak hu. Bishal Chaudhary le malai banako hun. Ke help garna sakchu?</div>
+          </div>
+        </div>
+      </div>
+      <div class="p-3 border-t border-white/5">
+        <div class="flex gap-2">
+          <input id="textInput" type="text" placeholder="Type a message..." class="flex-1 bg-white/5 border border-white/10 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:border-violet-500/50" onkeydown="if(event.key==='Enter')sendText()"/>
+          <button onclick="sendText()" class="btn-primary w-11 h-11 rounded-full flex items-center justify-center">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="text-center text-xs text-white/30 py-4 border-t border-white/5">
+    Crafted with ❤️ by <span class="gradient-text font-semibold">Bishal Chaudhary</span> • Powered by Google Gemini
+  </footer>
+</div>
+
+<div id="aboutModal" class="fixed inset-0 modal-overlay z-[100] hidden items-center justify-center p-4">
+  <div class="glass rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto scrollbar glow-border">
+    <div class="p-8">
+      <div class="flex justify-between items-start mb-6">
+        <div>
+          <div class="text-xs text-white/40 mb-1">ABOUT THE CREATOR</div>
+          <h2 class="font-display text-3xl font-bold gradient-text">Bishal Chaudhary</h2>
+          <div class="text-sm text-white/60 mt-1">Founder & Developer of Nepal AI</div>
+        </div>
+        <button onclick="closeAbout()" class="btn-ghost w-9 h-9 rounded-full flex items-center justify-center">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="w-24 h-24 rounded-2xl mb-6 flex items-center justify-center text-4xl font-display font-bold" style="background:linear-gradient(135deg,#8b5cf6,#ec4899,#06b6d4);">BC</div>
+
+      <p class="text-white/70 leading-relaxed mb-6">
+        Bishal Chaudhary ek passionate developer hun jasle Nepal AI voice assistant design ra develop gareko hun. 
+        Gemini API ko power prayog garera, yo assistant le Nepali bhasha ma voice-to-voice communication support garcha.
+        Premium UI, smooth animations, ra natural Nepali female voice — sabai Bishal ko vision ho.
+      </p>
+
+      <div class="grid grid-cols-2 gap-3 mb-6">
+        <div class="glass rounded-xl p-4">
+          <div class="text-xs text-white/40">Role</div>
+          <div class="font-semibold mt-1">Full-Stack Developer</div>
+        </div>
+        <div class="glass rounded-xl p-4">
+          <div class="text-xs text-white/40">Project</div>
+          <div class="font-semibold mt-1">Nepal AI Voice</div>
+        </div>
+        <div class="glass rounded-xl p-4">
+          <div class="text-xs text-white/40">Tech Stack</div>
+          <div class="font-semibold mt-1">Gemini • Netlify</div>
+        </div>
+        <div class="glass rounded-xl p-4">
+          <div class="text-xs text-white/40">Status</div>
+          <div class="font-semibold mt-1 text-emerald-400">● Production</div>
+        </div>
+      </div>
+
+      <div class="glass rounded-xl p-5 mb-6">
+        <div class="text-xs text-white/40 mb-2">MISSION</div>
+        <p class="text-sm text-white/70">"Nepali haru ko lagi, Nepali bhasha ma, world-class AI experience build garnu — yesai nai mero lakshya ho."</p>
+        <div class="text-xs text-white/40 mt-2">— Bishal Chaudhary</div>
+      </div>
+
+      <div class="flex gap-3">
+        <a href="#" class="btn-primary px-5 py-2.5 rounded-full text-sm font-medium flex-1 text-center">Connect on LinkedIn</a>
+        <a href="#" class="btn-ghost px-5 py-2.5 rounded-full text-sm font-medium flex-1 text-center">View GitHub</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let isListening = false;
+let recognition = null;
+let conversationHistory = [];
+let currentAudioLevel = 0;
+let isSpeaking = false;
+
+window.addEventListener('load', () => {
+  initSpeechRecognition();
+  loadVoices();
+  initWaveCanvas();
+});
+
+function initSpeechRecognition(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){setStatus('Speech recognition not supported', 'error');return;}
+  recognition = new SR();
+  recognition.lang = 'ne-NP';
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.maxAlternatives = 1;
+
+  recognition.onstart = () => {isListening = true;updateUI('listening');setStatus('Listening... boli rahannus', 'listening');};
+  recognition.onresult = (e) => {
+    let interim = '', final = '';
+    for(let i=e.resultIndex; i<e.results.length; i++){
+      if(e.results[i].isFinal) final += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    document.getElementById('transcriptPreview').textContent = interim || final;
+    if(final){addMessage('user', final);stopMic();askGemini(final);}
+  };
+  recognition.onerror = (e) => {console.error('SR error:', e.error);setStatus('Error: ' + e.error, 'error');stopMic();};
+  recognition.onend = () => {if(isListening){isListening = false;updateUI('idle');setStatus('Tap the mic to start', 'idle');}};
+}
+
+function toggleMic(){if(isListening) stopMic();else startMic();}
+function startMic(){if(window.speechSynthesis.speaking) window.speechSynthesis.cancel();try{recognition.start();}catch(e){}}
+function stopMic(){isListening = false;try{recognition.stop();}catch(e){}updateUI('idle');}
+
+async function askGemini(userText){
+  addMessage('assistant', '', true);
+  updateUI('thinking');
+  setStatus('Thinking...', 'thinking');
+  conversationHistory.push({role:'user', parts:[{text:userText}]});
+
+  try{
+    const res = await fetch('/.netlify/functions/gemini', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({messages: conversationHistory.slice(-10)})
+    });
+
+    if(!res.ok){const err = await res.json();throw new Error(err.error || 'Backend error');}
+
+    const data = await res.json();
+    const reply = data.reply || "Maaf garnus, kehi error bhayo.";
+    conversationHistory.push({role:'model', parts:[{text:reply}]});
+
+    const bubbles = document.querySelectorAll('.chat-bubble');
+    const last = bubbles[bubbles.length-1];
+    last.querySelector('.msg-text').textContent = reply;
+
+    updateUI('speaking');
+    setStatus('Speaking...', 'speaking');
+    speakNepali(reply);
+  }catch(err){
+    console.error(err);
+    const bubbles = document.querySelectorAll('.chat-bubble');
+    const last = bubbles[bubbles.length-1];
+    last.querySelector('.msg-text').textContent = 'Error: ' + err.message;
+    updateUI('idle');
+    setStatus('API Error', 'error');
+  }
+}
+
+let voices = [];
+function loadVoices(){voices = window.speechSynthesis.getVoices();}
+window.speechSynthesis.onvoiceschanged = loadVoices;
+
+function speakNepali(text){
+  if(!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  const nepaliVoices = voices.filter(v => /ne|nepali/i.test(v.lang + ' ' + v.name));
+  const hindiVoices = voices.filter(v => /hi|hindi/i.test(v.lang + ' ' + v.name));
+  const femaleVoices = voices.filter(v => /female|woman|zira|samantha|google.*female|priya/i.test(v.name));
+  const best = nepaliVoices.find(v => /female|woman/i.test(v.name)) || nepaliVoices[0] || hindiVoices.find(v => /female/i.test(v.name)) || hindiVoices[0] || femaleVoices[0];
+  if(best) utter.voice = best;
+  utter.lang = utter.voice?.lang || 'ne-NP';
+  utter.rate = 0.95;
+  utter.pitch = 1.3;
+  utter.volume = 1;
+  utter.onstart = () => {isSpeaking = true;updateUI('speaking');setStatus('Speaking...', 'speaking');};
+  utter.onend = () => {isSpeaking = false;updateUI('idle');setStatus('Tap the mic to start', 'idle');};
+  utter.onerror = () => {isSpeaking = false;updateUI('idle');};
+  simulateSpeakingLevels(text.length);
+  window.speechSynthesis.speak(utter);
+}
+
+function stopSpeaking(){window.speechSynthesis.cancel();isSpeaking = false;updateUI('idle');setStatus('Stopped', 'idle');}
+
+function simulateSpeakingLevels(textLen){
+  let steps = Math.min(textLen/2, 60);
+  let i = 0;
+  const interval = setInterval(() => {
+    if(!isSpeaking || i >= steps){currentAudioLevel = 0;clearInterval(interval);return;}
+    currentAudioLevel = 0.3 + Math.random() * 0.7;
+    i++;
+  }, 100);
+}
+
+function updateUI(state){
+  const orb = document.getElementById('orb');
+  const rings = document.querySelectorAll('.ring');
+  orb.classList.remove('listening','speaking');
+  rings.forEach(r => r.classList.remove('active'));
+  if(state === 'listening'){orb.classList.add('listening');rings.forEach(r => r.classList.add('active'));document.getElementById('micLabel').textContent = 'Listening...';document.getElementById('micBtn').classList.add('ring-4','ring-pink-500/30');}
+  else if(state === 'speaking'){orb.classList.add('speaking');rings.forEach(r => r.classList.add('active'));document.getElementById('micLabel').textContent = 'Start Talking';document.getElementById('micBtn').classList.remove('ring-4','ring-pink-500/30');}
+  else{document.getElementById('micLabel').textContent = 'Start Talking';document.getElementById('micBtn').classList.remove('ring-4','ring-pink-500/30');}
+}
+
+function setStatus(text, type){
+  const el = document.getElementById('statusLabel');
+  el.textContent = text;
+  el.className = 'text-sm ' + (type === 'listening' ? 'text-pink-400' : type === 'speaking' ? 'text-cyan-400' : type === 'thinking' ? 'text-violet-400' : type === 'error' ? 'text-red-400' : 'text-white/60');
+}
+
+function addMessage(role, text, loading=false){
+  const box = document.getElementById('chatBox');
+  const div = document.createElement('div');
+  div.className = 'flex gap-3 chat-bubble ' + (role === 'user' ? 'justify-end' : '');
+  if(role === 'user'){
+    div.innerHTML = `<div class="rounded-2xl rounded-tr-sm px-4 py-3 max-w-[85%]" style="background:linear-gradient(135deg,#8b5cf6,#06b6d4);"><div class="text-sm">${escapeHtml(text)}</div></div><div class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center bg-white/10 text-xs font-bold">U</div>`;
+  } else {
+    div.innerHTML = `<div class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center" style="background:linear-gradient(135deg,#8b5cf6,#06b6d4);"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z"/></svg></div><div class="glass rounded-2xl rounded-tl-sm px-4 py-3 max-w-[85%]"><div class="text-sm msg-text">${loading ? '<span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>' : escapeHtml(text)}</div></div>`;
+  }
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+  document.getElementById('chatCount').textContent = document.querySelectorAll('.chat-bubble').length + ' messages';
+}
+
+function escapeHtml(s){return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+function clearChat(){
+  conversationHistory = [];
+  const box = document.getElementById('chatBox');
+  box.innerHTML = '';
+  addMessage('assistant', 'Namaste! 🙏 Ma timro AI sahayak hu. Bishal Chaudhary le malai banako hun. Ke help garna sakchu?');
+}
+
+function quickAsk(text){addMessage('user', text);askGemini(text);}
+
+function sendText(){
+  const input = document.getElementById('textInput');
+  const text = input.value.trim();
+  if(!text) return;
+  input.value = '';
+  quickAsk(text);
+}
+
+function openAbout(){document.getElementById('aboutModal').classList.remove('hidden');document.getElementById('aboutModal').classList.add('flex');}
+function closeAbout(){document.getElementById('aboutModal').classList.add('hidden');document.getElementById('aboutModal').classList.remove('flex');}
+
+const canvas = document.getElementById('waveCanvas');
+const ctx = canvas.getContext('2d');
+let wavePhase = 0;
+let targetLevel = 0;
+let smoothLevel = 0;
+
+function resizeCanvas(){
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * devicePixelRatio;
+  canvas.height = rect.height * devicePixelRatio;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+}
+window.addEventListener('resize', resizeCanvas);
+
+function initWaveCanvas(){resizeCanvas();animateWaves();}
+
+function animateWaves(){
+  const w = canvas.width / devicePixelRatio;
+  const h = canvas.height / devicePixelRatio;
+  ctx.clearRect(0,0,w,h);
+  targetLevel = isListening ? (0.5 + Math.random()*0.5) : (isSpeaking ? currentAudioLevel : 0.08);
+  smoothLevel += (targetLevel - smoothLevel) * 0.15;
+  const cx = w/2, cy = h/2;
+  const baseRadius = 110;
+  const layers = [
+    {color:'rgba(139,92,246,0.4)', freq:2, amp:20, speed:0.02, width:2},
+    {color:'rgba(6,182,212,0.35)', freq:3, amp:15, speed:0.03, width:2},
+    {color:'rgba(236,72,153,0.3)', freq:4, amp:25, speed:0.025, width:2},
+    {color:'rgba(196,181,253,0.2)', freq:5, amp:12, speed:0.04, width:1.5},
+  ];
+  layers.forEach(layer => {
+    ctx.beginPath();
+    const points = 180;
+    for(let i=0; i<=points; i++){
+      const angle = (i/points) * Math.PI * 2;
+      const wave = Math.sin(angle * layer.freq + wavePhase * layer.speed * 60) * layer.amp * smoothLevel;
+      const r = baseRadius + wave;
+      const x = cx + Math.cos(angle) * r;
+      const y = cy + Math.sin(angle) * r;
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = layer.color;
+    ctx.lineWidth = layer.width;
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = layer.color;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  });
+  const grad = ctx.createRadialGradient(cx,cy,baseRadius*0.8, cx,cy, baseRadius*1.5);
+  grad.addColorStop(0, `rgba(139,92,246,${0.1 + smoothLevel*0.2})`);
+  grad.addColorStop(1, 'rgba(139,92,246,0)');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(cx,cy,baseRadius*1.5,0,Math.PI*2);
+  ctx.fill();
+  wavePhase += 1;
+  requestAnimationFrame(animateWaves);
+}
+
+document.getElementById('aboutModal').addEventListener('click', e => { if(e.target.id === 'aboutModal') closeAbout(); });
+</script>
+</body>
+</html>
